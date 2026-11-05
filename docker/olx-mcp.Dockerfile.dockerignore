@@ -1,0 +1,3 @@
+# The main build context (./docker) contributes nothing: the source comes from the
+# named context `olx-mcp-src`, and only the files the Dockerfile copies are fetched.
+*

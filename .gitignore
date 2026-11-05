@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.idea/
+
+# Virtual environments
+.venv
+
+# Runtime data (SQLite DB, agent workdir)
+data/
+.env
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json

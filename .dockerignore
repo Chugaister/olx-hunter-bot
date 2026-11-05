@@ -1,0 +1,8 @@
+# Only what the image build needs; secrets and runtime data never enter the image.
+*
+!pyproject.toml
+!uv.lock
+!README.md
+!src/**
+**/__pycache__
+**/*.py[oc]

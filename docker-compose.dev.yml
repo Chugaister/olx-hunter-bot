@@ -1,0 +1,11 @@
+# Local development additions, layered on top of docker-compose.yml:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.dev.yml   (in .env)
+# - olx-mcp is also published on 127.0.0.1:3000, so the bot can run on the host
+#   (uv run olx-hunter-bot with OLX_MCP_URL=http://127.0.0.1:3000/mcp).
+# - Set OLX_MCP_SOURCE=../olx-mcp in .env to build olx-mcp from your local checkout.
+services:
+  olx-mcp:
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      OLX_MCP_ALLOWED_HOSTS: "127.0.0.1:3000,localhost:3000,olx-mcp:3000"

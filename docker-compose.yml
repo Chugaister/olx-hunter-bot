@@ -1,0 +1,54 @@
+# Production setup (e.g. a VPS behind the host's nginx). For local development add
+# docker-compose.dev.yml, e.g. via COMPOSE_FILE in .env (see README).
+#
+# Values in ${...} come from .env in this directory (Compose interpolation); the bot
+# container additionally reads all of .env at start (env_file).
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  bot:
+    build: .
+    image: olx-hunter-bot:local
+    init: true # reap Claude Code child processes
+    restart: unless-stopped
+    env_file: .env # secrets stay out of the image
+    environment:
+      # Container-specific values; they take precedence over .env.
+      OLX_MCP_URL: http://olx-mcp:3000/mcp
+      HOST: 0.0.0.0
+      PORT: "8000"
+      DATA_DIR: /data
+    ports:
+      # Loopback only: the host's nginx (or ngrok) forwards the webhook here.
+      # Pick a port that is free on the host (another project may use 8000).
+      - "127.0.0.1:${BOT_PORT:-8000}:8000"
+    volumes:
+      # SQLite DB, agent workdir and Claude Code's home (chat sessions in data/home/.claude).
+      - ./data:/data
+    depends_on:
+      olx-mcp:
+        condition: service_healthy
+    mem_limit: 1g
+    logging: *logging
+
+  olx-mcp:
+    build:
+      context: ./docker
+      dockerfile: olx-mcp.Dockerfile
+      additional_contexts:
+        # Pinned commit of Chugaister/olx-mcp `deploy` (HTTP transport + scraper fixes).
+        # Bump the hash to update; switch to upstream once the PRs are merged.
+        olx-mcp-src: ${OLX_MCP_SOURCE:-https://github.com/Chugaister/olx-mcp.git#53c23621c61c95a96b81732c6253b0fef3d56295}
+    image: olx-mcp:local
+    init: true # reap Chromium child processes
+    restart: unless-stopped
+    # Not published: only the bot reaches it, over the compose network.
+    environment:
+      OLX_MCP_ALLOWED_HOSTS: "olx-mcp:3000"
+    mem_limit: 1g
+    logging: *logging
