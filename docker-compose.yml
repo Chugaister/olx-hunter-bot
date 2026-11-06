@@ -3,6 +3,12 @@
 #
 # Values in ${...} come from .env in this directory (Compose interpolation); the bot
 # container additionally reads all of .env at start (env_file).
+#
+# Everything here is scoped to this project (name, container names, image label), so it
+# can share a host with other projects: deploy/deploy.sh only touches what is labelled
+# com.chugaister.project=olx-hunter.
+
+name: olx-hunter
 
 x-logging: &logging
   driver: json-file
@@ -12,8 +18,12 @@ x-logging: &logging
 
 services:
   bot:
-    build: .
+    build:
+      context: .
+      labels:
+        com.chugaister.project: olx-hunter
     image: olx-hunter-bot:local
+    container_name: olx-hunter-bot
     init: true # reap Claude Code child processes
     restart: unless-stopped
     env_file: .env # secrets stay out of the image
@@ -40,11 +50,14 @@ services:
     build:
       context: ./docker
       dockerfile: olx-mcp.Dockerfile
+      labels:
+        com.chugaister.project: olx-hunter
       additional_contexts:
         # Pinned commit of Chugaister/olx-mcp `deploy` (HTTP transport + scraper fixes).
         # Bump the hash to update; switch to upstream once the PRs are merged.
         olx-mcp-src: ${OLX_MCP_SOURCE:-https://github.com/Chugaister/olx-mcp.git#53c23621c61c95a96b81732c6253b0fef3d56295}
-    image: olx-mcp:local
+    image: olx-hunter-mcp:local
+    container_name: olx-hunter-mcp
     init: true # reap Chromium child processes
     restart: unless-stopped
     # Not published: only the bot reaches it, over the compose network.

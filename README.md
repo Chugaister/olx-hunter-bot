@@ -58,9 +58,17 @@ Requirements: Docker with the Compose plugin, nginx and certbot on the host, abo
 (Chromium and Claude Code each get a 1 GB cap), and a subdomain with an **A record** pointing to
 the VPS.
 
+Layout (same as the other projects on the host): code in `/opt/olx-hunter-bot`, owned by the
+`deploy` user, who runs Docker and is the user `deploy/deploy.sh` connects as.
+
 ```bash
-# 1. code
-git clone git@github.com:<you>/olx-hunter-bot.git && cd olx-hunter-bot
+# 0. once: the deploy user may run Docker (log out and in again afterwards)
+sudo usermod -aG docker deploy
+
+# 1. code (as deploy; needs a GitHub deploy key for this repo in ~deploy/.ssh)
+sudo mkdir -p /opt/olx-hunter-bot && sudo chown deploy:deploy /opt/olx-hunter-bot
+sudo -u deploy git clone git@github.com:Chugaister/olx-hunter-bot.git /opt/olx-hunter-bot
+cd /opt/olx-hunter-bot
 
 # 2. config: fill in the required values; WEBHOOK_BASE_URL=https://<your subdomain>,
 #    BOT_PORT = a port free on this host (check: ss -ltn | grep :8000)
@@ -88,15 +96,20 @@ Containers restart automatically (`restart: unless-stopped`), including after a 
 as the Docker service is enabled (`sudo systemctl enable docker`). Logs are rotated (3 × 10 MB per
 container).
 
-**Update:**
+**Update:** from your laptop, after pushing to `main`:
 ```bash
-git pull && docker compose up -d --build
+deploy/deploy.sh                       # DEPLOY_HOST=vps DEPLOY_DIR=/opt/olx-hunter-bot by default
 ```
+It checks that local `main` is clean and pushed, runs the tests, then on the VPS does
+`git pull --ff-only`, `docker compose up -d --build`, waits for the bot to be healthy, and
+removes this project's old images. It only touches the `olx-hunter` compose project
+(containers `olx-hunter-bot` and `olx-hunter-mcp`), so other projects on the host are safe.
+By hand on the VPS: `git pull && docker compose up -d --build`.
 
 **Backups:** `deploy/backup.sh` makes a consistent copy of the database while the bot runs,
 into `data/backups/`, and deletes copies older than 14 days. Daily via cron:
 ```
-30 4 * * * cd /path/to/olx-hunter-bot && deploy/backup.sh >> data/backups/backup.log 2>&1
+30 4 * * * cd /opt/olx-hunter-bot && deploy/backup.sh >> data/backups/backup.log 2>&1
 ```
 For a full restore you also want `data/home` (chat sessions); copying the whole `data/`
 directory while the bot is stopped covers everything.

@@ -6,7 +6,7 @@
 #
 # Uses SQLite's online backup API inside the bot container (WAL-safe; copying the
 # .db file alone could miss recent writes). Cron example (daily 04:30):
-#   30 4 * * * cd /path/to/olx-hunter-bot && deploy/backup.sh >> data/backups/backup.log 2>&1
+#   30 4 * * * cd /opt/olx-hunter-bot && deploy/backup.sh >> data/backups/backup.log 2>&1
 set -eu
 
 cd "$(dirname "$0")/.."
