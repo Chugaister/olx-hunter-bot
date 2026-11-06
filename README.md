@@ -69,12 +69,12 @@ cp .env.example .env && chmod 600 .env && nano .env
 # 3. data dir owned by the container user (uid 1000)
 mkdir -p data && sudo chown -R 1000:1000 data
 
-# 4. nginx site (edit server_name and the proxy_pass port), then TLS
+# 4. TLS certificate first (the site config refers to it), then the nginx site
+#    (the config is for olx-hunter.chugaister.net and BOT_PORT=8000; adjust if yours differ)
+sudo certbot certonly --nginx -d olx-hunter.chugaister.net
 sudo cp deploy/nginx/olx-hunter-bot.conf /etc/nginx/sites-available/olx-hunter-bot
-sudo nano /etc/nginx/sites-available/olx-hunter-bot
 sudo ln -s /etc/nginx/sites-available/olx-hunter-bot /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d <your subdomain>
 
 # 5. start (the first build takes a few minutes); the bot registers the webhook on startup
 docker compose up -d --build
